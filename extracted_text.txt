@@ -1,0 +1,119 @@
+Scaling Laws for Neural Language Models
+Jared Kaplan
+Johns Hopkins University, OpenAI
+jaredk@jhu.eduSam McCandlish
+OpenAI
+sam@openai.com
+Tom Henighan
+OpenAI
+henighan@openai.comTom B. Brown
+OpenAI
+tom@openai.comBenjamin Chess
+OpenAI
+bchess@openai.comRewon Child
+OpenAI
+rewon@openai.com
+Scott Gray
+OpenAI
+scott@openai.comAlec Radford
+OpenAI
+alec@openai.comJeffrey Wu
+OpenAI
+jeffwu@openai.comDario Amodei
+OpenAI
+damodei@openai.com
+Abstract
+We study empirical scaling laws for language model performance on the cross-entropy loss.
+The loss scales as a power-law with model size, dataset size, and the amount of compute
+used for training, with some trends spanning more than seven orders of magnitude. Other
+architectural details such as network width or depth have minimal effects within a wide
+range. Simple equations govern the dependence of overﬁtting on model/dataset size and the
+dependence of training speed on model size. These relationships allow us to determine the
+optimal allocation of a ﬁxed compute budget. Larger models are signiﬁcantly more sample-
+efﬁcient, such that optimally compute-efﬁcient training involves training very large models
+on a relatively modest amount of data and stopping signiﬁcantly before convergence.
+Equal contribution.
+Contributions: Jared Kaplan and Sam McCandlish led the research. Tom Henighan contributed the LSTM ex-
+periments. Tom Brown, Rewon Child, and Scott Gray, and Alec Radford developed the optimized Transformer
+implementation. Jeff Wu, Benjamin Chess, and Alec Radford developed the text datasets. Dario Amodei provided
+guidance throughout the project.arXiv:2001.08361v1  [cs.LG]  23 Jan 2020Contents
+1 Introduction 2
+2 Background and Methods 6
+3 Empirical Results and Basic Power Laws 7
+4 Charting the Inﬁnite Data Limit and Overﬁtting 10
+5 Scaling Laws with Model Size and Training Time 12
+6 Optimal Allocation of the Compute Budget 14
+7 Related Work 18
+8 Discussion 18
+Appendices 20
+A Summary of Power Laws 20
+B Empirical Model of Compute-Efﬁcient Frontier 20
+C Caveats 22
+D Supplemental Figures 23
+1 Introduction
+Language provides a natural domain for the study of artiﬁcial intelligence, as the vast majority of reason-
+ing tasks can be efﬁciently expressed and evaluated in language, and the world’s text provides a wealth of
+data for unsupervised learning via generative modeling. Deep learning has recently seen rapid progress in lan-
+guage modeling, with state of the art models [RNSS18, DCLT18, YDY+19, LOG+19, RSR+19] approaching
+human-level performance on many speciﬁc tasks [WPN+19], including the composition of coherent multi-
+paragraph prompted text samples [RWC+19].
+One might expect language modeling performance to depend on model architecture, the size of neural models,
+the computing power used to train them, and the data available for this training process. In this work we will
+empirically investigate the dependence of language modeling loss on all of these factors, focusing on the
+Transformer architecture [VSP+17, LSP+18]. The high ceiling and low ﬂoor for performance on language
+tasks allows us to study trends over more than seven orders of magnitude in scale.
+Throughout we will observe precise power-law scalings for performance as a function of training time, con-
+text length, dataset size, model size, and compute budget.
+1.1 Summary
+Our key ﬁndings for Transformer language models are are as follows:
+2Here we display predicted compute when using a sufﬁciently small batch size. See Figure 13 for comparison to the
+purely empirical data.
+2Dataset Size tokensParameters non-embeddingCompute PF-days, non-embeddingTest LossFigure 1 Language modeling performance improves smoothly as we increase the model size, datasetset
+size, and amount of compute2used for training. For optimal performance all three factors must be scaled
+up in tandem. Empirical performance has a power-law relationship with each individual factor when not
+bottlenecked by the other two.
+Performance depends strongly on scale, weakly on model shape: Model performance depends most
+strongly on scale, which consists of three factors: the number of model parameters N(excluding embed-
+dings), the size of the dataset D, and the amount of compute Cused for training. Within reasonable limits,
+performance depends very weakly on other architectural hyperparameters such as depth vs. width. (Section
+3)
+Smooth power laws: Performance has a power-law relationship with each of the three scale factors
+N;D;C when not bottlenecked by the other two, with trends spanning more than six orders of magnitude
+(see Figure 1). We observe no signs of deviation from these trends on the upper end, though performance
+must ﬂatten out eventually before reaching zero loss. (Section 3)
+Universality of overﬁtting: Performance improves predictably as long as we scale up NandDin tandem,
+but enters a regime of diminishing returns if either NorDis held ﬁxed while the other increases. The
+performance penalty depends predictably on the ratio N0:74=D, meaning that every time we increase the
+model size 8x, we only need to increase the data by roughly 5x to avoid a penalty. (Section 4)
+Universality of training: Training curves follow predictable power-laws whose parameters are roughly
+independent of the model size. By extrapolating the early part of a training curve, we can roughly predict the
+loss that would be achieved if we trained for much longer. (Section 5)
+Transfer improves with test performance: When we evaluate models on text with a different distribution
+than they were trained on, the results are strongly correlated to those on the training validation set with
+a roughly constant offset in the loss – in other words, transfer to a different distribution incurs a constant
+penalty but otherwise improves roughly in line with performance on the training set. (Section 3.2.2)
+Sample efﬁciency: Large models are more sample-efﬁcient than small models, reaching the same level of
+performance with fewer optimization steps (Figure 2) and using fewer data points (Figure 4).
+Convergence is inefﬁcient: When working within a ﬁxed compute budget Cbut without any other restric-
+tions on the model size Nor available data D, we attain optimal performance by training very large models
+and stopping signiﬁcantly short of convergence (see Figure 3). Maximally compute-efﬁcient training would
+therefore be far more sample efﬁcient than one might expect based on training small models to convergence,
+with data requirements growing very slowly as DC0:27with training compute. (Section 6)
+Optimal batch size: The ideal batch size for training these models is roughly a power of the loss only,
+and continues to be determinable by measuring the gradient noise scale [MKAT18]; it is roughly 1-2 million
+tokens at convergence for the largest models we can train. (Section 5.1)
+Taken together, these results show that language modeling performance improves smoothly and predictably
+as we appropriately scale up model size, data, and compute. We expect that larger language models will
+perform better and be more sample efﬁcient than current models.
+3Larger models require fewer samples to reach the same performance10864The optimal model size grows smoothly with the loss target and compute budgetLine color indicates
+number of parameters
+1071091011Tokens ProcessedCompute (PF-days)10-910-610-3100Test LossCompute-eﬃcient training stops far short of convergence
+103109106103 Params109 Params
+10864Figure 2 We show a series of language model training runs, with models ranging in size from 103to109
+parameters (excluding embeddings).
+100x Batch Size<10x Serial Steps>1,000,000x Model SizeData requirements
+grow relatively slowlyOptimal model size
+increases very quicklyMinimum serial steps increases negligibly
+Figure 3 As more compute becomes available, we can choose how much to allocate towards training larger
+models, using larger batches, and training for more steps. We illustrate this for a billion-fold increase in
+compute. For optimally compute-efﬁcient
