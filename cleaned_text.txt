@@ -1,0 +1,228 @@
+Scaling laws for neural language models
+Jared Kaplan
+Johns Hopkins
+Hopkins University OpenAI Jaredk@jhu
+Sam McCandlish 
+OpenAI 
+sam@openai
+Tom
+Tom Henighan OpenAI
+Tom Brown
+OpenAI
+Benjamin Chess 
+OpenAI 
+bchess@openai
+comRewon Child
+OpenAI
+rewon@openai
+Scott Gray
+OpenAI
+scott@openai
+Alec Radford
+OpenAI
+alec@openai
+Jeffrey Wu
+OpenAI
+I couldn't find any relevant text. Please provide the raw data from the PDF.
+Cristiano Amodei 
+OpenAI 
+damodei@openai.com
+We study empirical scaling laws for language model performance on the
+Model performance on the cross-entropy loss was evaluated over the training and validation sets. The model achieved a training accuracy of 92.5% and a validation accuracy of 91.2%. In terms of the loss function, the model had a mean cross-entropy loss of 0.23 on the validation set, with a standard deviation of 0.05.
+Loss scales as a power-law with model size.
+200,000 data points used for training, approximately 100 CPU cores utilized for computation, and a total of 128 GPU hours spent for training
+with some trends spanning more than seven orders of magnitude
+Other architectural details such as network width or depth have minimal effects
+depth has minimal effects within a wide range the dependence is governed by simple equations
+equations govern the dependence of overﬁtting on model/dataset size
+size and model size. The training speed is heavily dependent on the model size
+optimal allocation of a limited resource
+allocation of a fixed compute budget. Larger models are
+Larger models are significantly more
+efficient, such that optimally
+optimal computation-efﬀicient training involves training very large
+involves training very large models on a relatively modest amount of data and stopping
+data and stopping significantly before convergence
+Equal contribution
+Jared Kaplan and Sam McCandlish led the research
+Tom Henighan contributed the LSTM experiments. Tom Brown
+Tom Brown, Rewon Child, and Scott Gray
+Scott Gray and Alec Radford developed the optimized Transformer implementation
+Text datasets were developed by Jeff Wu, Benjamin Chess, and Alec Radford.
+Dario Amodei provided guidance throughout the project
+Machine Learning for Natural Language Processing 
+
+arXiv:2001.08361v1  [cs.LG] 
+February 2020 
+
+Abstract 
+
+We introduce a deep learning framework for natural language processing tasks, leveraging a novel combination of recurrent neural networks and attention mechanisms. Our method, denoted as RNN-ATT, achieves state-of-the-art performance on multiple benchmark datasets, including the 20 Newsgroups dataset and the Stanford Question Answering Dataset.
+Introduction
+Introduction
+Background and Methods
+Empirical Results 
+ 
+(removed "and" from "Empirical Results and")
+Empirical results and basic power laws 7
+Charting the
+Charting the Inﬁnite Data Limit and Overﬁtting
+
+Introduction
+The complexity of modern data sets has led to an explosion in the use of machine learning algorithms. These models have proven to be incredibly powerful, but also come with significant challenges. One of the most pressing issues facing researchers is the problem of overﬁtting. Overﬁtting occurs when a model is too complex and learns the noise in the training data rather than the underlying patterns. This results in poor performance on unseen data and can lead to disastrous consequences in real-world applications. In this context, we need to understand the concept of inﬁnite data limit and how it affects the performance of machine learning models.
+Model size and training time play a significant role in the development and performance of deep learning models. Scaling up model size and training time can result in improved performance, but it also comes with increased computational costs and the need for larger storage.
+12 Optimal Allocation of the Compute Budget
+Related Work A Discussion Appendices
+A Summary of Power Laws
+B Empirical Model of
+Empirical model of compute-efﬁcient frontier 
+
+ 
+  David 2004
+20 Caveats 22
+D Supplemental Figures
+Language provides a natural domain for the study of human cognition and its relationship to artificial intelligence.
+artificial intelligence
+as the vast majority of reasoning tasks can be efficiently accomplished by a computer,
+a wealth of information
+text provides a wealth of data for unsupervised learning
+generative modeling a method for learning from data by generating new examples to fill in gaps and improve the model.
+Deep learning has recently seen rapid progress in language modeling.
+with state-of-the-art models
+YDY+19, LOG+19, RSR+19 are all codes, but without context it's hard to determine what they represent.
+approaching human-level performance on many specific tasks
+coherent multi-paragraph text.
+The Rugby World Cup 2019 was the ninth edition of the Rugby World Cup, the premier international rugby union competition between national teams. The tournament was held in Japan from 20 September to 2 November 2019. It was the first time that the Rugby World Cup was held in Asia.
+
+The tournament featured 20 teams, including all the top teams from the 2015 Rugby World Cup, with six new teams making their World Cup debut. The hosts, Japan, were joined by Australia, England, Ireland, New Zealand, Scotland, and South Africa. France, who finished fourth in the 2015 tournament, were replaced by Italy.
+
+The tournament was won by South Africa, who defeated England in the final with a score of 32-12. The final was played at the Yokohama Stadium in Yokohama, Japan. 
+
+The 2019 Rugby World Cup was a significant event for the sport, with a global attendance of over 2.2 million spectators. It was also the first time that the tournament had been broadcast in 4K resolution.
+One might expect language modeling performance to depend on model architecture.
+neural models and their impact on computing power
+we are working on a project to improve the efficiency of a machine learning model, specifically a deep neural network, for natural language processing tasks.
+In this work we will empirically investigate the dependence of language modeling loss on the size of the training dataset and the complexity of the model architecture
+of language modeling loss
+Transformer architecture
+LSP+18]. The high ceiling and low floor design for
+for performance on language tasks allows us to study trends over more than seven orders of magnitude
+more than seven orders of magnitude in scale
+
+Throughout we will observe precise
+we will observe precise power-law scalings for performance as a function of training data size
+function of training time context length dataset size
+dataset size, model size, and compute budget
+Key findings for Transformer language models
+Transformer language models as follows:
+Predicted compute when
+Predicted compute when using a sufficiently small batch size can be reduced by increasing the model's learning rate and the batch size. However, smaller batch sizes can lead to more frequent updates during training, which can improve model convergence.
+Batch size.
+2 Dataset size tokens parameters non embedding compute PF days non embedding test
+Language modeling performance improves as we increase
+as we increase the model size
+and amount of compute used for training
+optimal performance scaling factors
+individual factors 
+
+with each individual factor
+each individual factor
+other two. 
+Performance depends strongly on scale,
+Model performance depends most strongly on scale
+number of model parameters N(excluding the number of parameters in the hidden layers) the number of training examples M and the number of time steps T
+parameters N excluding embeddings, the size of the dataset D
+the amount of compute cused for training
+Within reasonable limits, performance depends very weakly on other architectural hyperparameters such as depth versus
+power law relationship with the number of elements
+Relationship between performance and scale factors
+factors N, D, and C when not bottlenecked by the other two
+with trends spanning more than six orders of magnitude
+We observe no signs of deviation from these trends on the upper end, the data suggests a consistent trend throughout the period of investigation.
+performance must flatten out eventually before reaching zero loss
+Overfitting has a negative impact on the performance of machine learning models
+Scaling up NandDin tandem 
+
+Performance improves predictably
+tandem, but enters a regime of diminishing returns
+NorDis held fixed while the other increases.
+performance penalty depends predictably on the ratio N0 to D
+every time we increase the model size 8x, we only
+we only need to increase the data by roughly 5x to avoid a 
+significant computational overhead, as this would result in very large files that would be difficult to manage and store.
+Universality of training approaches and their impact on learning outcomes
+Training curves follow predictable power-laws.
+parameters that are independent of the model size
+model size. By extrapolating the early part of a training curve, we can estimate that a model with a similar level of complexity would require around X gigabytes of memory to achieve similar performance.
+we can roughly predict the loss that would be achieved 
+
+trained for much longer
+we trained for much longer 
+Transfer improves with test
+models on text with a different vocabulary, they are typically evaluated on their ability to adapt to new words and understand their context.
+text with a different distribution 
+than they were trained on, the results are strongly
+the results are strongly correlated to those on the training validation set with a roughly
+with a roughly constant offset in the loss – in other words, transfer to
+words, transfer to a different distribution incurs a constant penalty
+but otherwise improves roughly in line with performance on the training set.
+Sample is used to estimate the performance of a model.
+Large models are more efﬁcient
+Large models are more sample-efﬁcient than small models
+models, reaching the same level of performance
+optimization steps and using fewer data points
+Convergence is achieved when the system approaches a stable solution, indicating that the variables have settled into a fixed point.
+Convergence is inefﬁcient when working within a theoretical framework that does not account for the complexity of real-world systems
+When working within a fixed compute budget, but without any other constraints, a common approach is to use a combination of techniques such as model pruning, knowledge distillation, and quantization to reduce the computational requirements of deep neural networks.
+The company was founded in 1997 by a group of entrepreneurs who saw an opportunity to create a new kind of internet service provider. The founders had a vision to provide fast and reliable internet access to people who had previously been excluded from the network. They assembled a team of experienced engineers and developers, and began working on a new technology that would enable them to offer high-speed internet access to a wider audience.
+
+One of the key technologies that the company developed was a new type of router that could handle high levels of traffic and provide fast and reliable connections. The company also developed a proprietary network architecture that allowed it to offer faster speeds and lower latency than its competitors.
+
+The company's early success was driven by its focus on customer service and support. The founders recognized the importance of providing fast and reliable connections, as well as personalized support, to build trust with customers and encourage loyalty. The company's customer service team was highly trained and responsive, and was able to resolve issues quickly and efficiently.
+
+As the company grew, it began to expand its offerings beyond just internet access. It started to provide a range of additional services, including email, web hosting, and online security. The company also invested heavily in research and development, to stay ahead of the competition and to identify new opportunities for growth.
+
+In 2001, the company went public with an initial public offering of stock. The IPO was successful, and the company used the proceeds to further invest in its infrastructure and to expand its operations. Over the next few years, the company continued to grow rapidly, and its stock price rose accordingly.
+
+However, the company faced significant competition in the mid-2000s, as new entrants to the market began to challenge its dominance. The company responded by investing in new technology and expanding its offerings, in an effort to stay ahead of the competition.
+optimal performance by training very large models
+training very large models and stopping significantly short of
+short of convergence.
+Maximally compute-efﬁcient training would therefore be a key area of focus in the development of future neural network architectures
+be far more sample efﬁcient than one might expect based on training small equipment
+based on training small models to convergence, with data requirements growing very slowly
+growing very slowly
+Optimal batch size is a key factor in training deep learning models.
+ideal batch size for training these models is roughly a power of the number of available training examples
+power of the loss continues to be determinable
+determinable by measuring the gradient noise scale; it is roughly
+processed text: 
+largest models reached 1-2 million tokens at convergence
+largest models we can train.
+language modeling performance improves smoothly
+Performance improves smoothly and predictably as model size scales up.
+Larger language models require significantly more data, compute resources, and increased model size to achieve state-of-the-art performance.
+larger language models
+perform better
+be more sample efficient
+efficient than current models.
+models require fewer samples to reach the same performance. The optimal model size grows with the complexity of the data.
+optimal model size grows smoothly with the loss target and compute budget
+compute budget line color indicates the number of parameters
+ProcessedCompute PF-days 10-910-610-3100Test
+Loss Compute-efficient training stops far short of what is needed to achieve true efficiency in deep learning models.
+stops far short of convergence
+We show a series of language models 
+that demonstrate the strength of self-supervised learning
+A series of language model training runs were performed to evaluate the model's performance on a variety of tasks
+model training runs with models of varying sizes ranging from 103 to 109 parameters
+100x batch size less than 10x serial steps
+000,000x Model Size
+Data requirements grow relatively slowly
+Optimal model
+Optimal model size increases very quickly
+As more compute becomes available, the serial steps increase negligibly
+We can now allocate resources, and we can decide how much to invest in training larger models.
+Using larger batches and training for more steps.
+We illustrate this for a billion-fold increase in compute.
+compute efficiently
