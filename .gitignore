@@ -1,4 +1,5 @@
 .env
 /llama-recepies
 .ipynb_checkpoints
+GROQ_API_KEY
 
