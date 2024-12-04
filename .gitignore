@@ -1,4 +1,5 @@
 .env
 /llama-recepies
+.vscode/settings.json
 .ipynb_checkpoints
-
+llama-recipes
