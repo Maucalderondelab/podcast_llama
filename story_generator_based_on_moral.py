@@ -5,6 +5,21 @@ from enum import Enum
 import os
 load_dotenv()
 from datetime import datetime
+# Import the dspy modules and CoT Classes
+from helper_functions.resoning_helpers import (
+    PromptAnalysis, 
+    CharacterDevelopment, 
+    PlotSctucture, 
+    SettingDevelopment, 
+    StoryValidator, 
+    TitleGeneration, 
+    ConflictType, 
+    GenreType, 
+    ToneType, 
+    get_conflict_preferences, 
+    get_genre_preferences, 
+    get_tone_preferences
+)
 
 # load the LLM model
 open_ai = os.getenv("OPENAI_API_KEY")
@@ -13,95 +28,13 @@ llm = dspy.LM("openai/gpt-4o-mini", api_key=open_ai)
 dspy.configure(lm=llm)
 
 
-# Now we are going to create some dspy clases. For this purpose we are going to need that our story consist of the 5 elements
-
-# we create a class for the conflict type
-class ConflictType(Enum):
-   # CHARACTER_VS_CHARACTER = "Character vs Character"
-   # CHARACTER_VS_NATURE = "Character vs Nature"
-   # CHARACTER_VS_SOCIETY = "Character vs Society"
-    CHARACTER_VS_WORLD = "Character vs World"
-   # CHARACTER_VS_SELF = "Character vs Self"
-
-# We make a prompt analysis with a sequence of reasoning
-class PromptAnalysis(dspy.Signature):
-    """Analyze the initial story promp to extract important elements"""
-    # Inputs
-    prompt = dspy.InputField()
-
-    # Outputs
-    theme = dspy.OutputField(desc="Main theme or the moral of the story")
-    genre = dspy.OutputField(desc="Genre of the story")
-    tone = dspy.OutputField(desc="Tone of the story, keep a serious and reflective tone")
-    conflict_type = dspy.OutputField(desc="Conflict type of the story")
-
-# Create a character development 
-class CharacterDevelopment(dspy.Signature):
-    """Develop the main character and supporting characters"""
-    # Inputs
-    theme = dspy.InputField()
-    tone = dspy.InputField()
-
-    # Outputs
-    portagonist = dspy.OutputField(desc="Detailed description of the main character")
-    motivation = dspy.OutputField(desc="Character's primary motivation")
-    supporting_characters = dspy.OutputField(desc="Detailed description of supporting characters")
-
-# Create the plot structure
-class PlotSctucture(dspy.Signature):
-    """Create a detailed plot structure"""
-    # Inputs
-    character_info = dspy.InputField()
-    theme = dspy.InputField()
-    genre = dspy.InputField()
-    conflict_type = dspy.InputField()
-
-    # Outputs
-    exposition = dspy.OutputField(desc="Story setup and background")
-    inciting_incident = dspy.OutputField(desc="Event that starts the main conflict")
-    rising_action = dspy.OutputField(desc="Series of events building tension")
-    climax = dspy.OutputField(desc="Peak of conflict and tension")
-    falling_action = dspy.OutputField(desc="Events following climax")
-    resolution = dspy.OutputField(desc="How story concludes")
-
-# Setting the development of the story
-class SettingDevelopment(dspy.Signature):
-    """Create story setting that supports theme and characters"""
-    # Inputs
-    theme = dspy.InputField()
-    tone = dspy.InputField()
-    character_info = dspy.InputField()
-
-    # Outputs
-    location = dspy.OutputField(desc="Setting of the story")
-    atmosphere = dspy.OutputField(desc="Enviriomental and emotional atmosphere of the story")
-    significance = dspy.OutputField(desc="Significance of the setting for the story")
-
-# Create a story validador Signature
-class StoryValidator(dspy.Signature):
-    """Validate story elements for consistency and theme service"""
-    # Inputs
-    story_elements = dspy.InputField(desc="All story elements to validate")
-
-    # Outputs
-    consistency_check = dspy.OutputField(desc="Check for plot holes and inconsistencies")
-    theme_service = dspy.OutputField(desc="How elements support the theme")
-    character_consistency = dspy.OutputField(desc="Character behavior consistency")
-    suggestions = dspy.OutputField(desc="Improvement suggestions")
-
-class TitleGeneration(dspy.Signature):
-    """Generates a consistent title for the story"""
-    # Inputs
-    story = dspy.InputField()
-    theme = dspy.InputField()
-
-    # Outputs
-    title = dspy.OutputField(desc="Concise title (6-9 words) that captures story essence")
-
 # Now we have to create the story generator with all the classes we've created
 class StoryGenerator(dspy.Module):
-    def __init__(self):
+    def __init__(self, conflict_type: ConflictType = None, genre_type: GenreType = None, tone_type: ToneType = None):
         super().__init__()
+        self.conflict_type = conflict_type
+        self.genre_type = genre_type
+        self.tone_type = tone_type
 
         # Initialize all the Chain Of Thought modules for each state
         self.prompt_analyzer = dspy.ChainOfThought(PromptAnalysis)
@@ -114,17 +47,7 @@ class StoryGenerator(dspy.Module):
         # Create the resoning caputure buffer
         self.reasoning_buffer = []
 
-        # Custom rationales for each stage
-        self.character_rationale = dspy.OutputField(
-            prefix="Reasoning: Let's develop our character by considering",
-            desc="${create compelling characters}. We..."
-        )
 
-        self.plot_rationale = dspy.OutputField(
-            prefix="Reasoning: Let's structure our plot by",
-            desc="${build rising action and conflict}. We..."
-        )
-    
     def log_reasoning(self, stage: str, content: str):
         timestamp = datetime.now().strftime("%H:%M:%S")
         self.reasoning_buffer.append(f"\n=== {stage} === [{timestamp}]\n{content}\n")
@@ -132,8 +55,17 @@ class StoryGenerator(dspy.Module):
     def forward(self, prompt: str):
         # Stage 1: Prompt Analysis
         self.log_reasoning("PROMPT ANALYSIS", f"Input prompt: {prompt}")
-        prompt_analysis = self.prompt_analyzer(prompt=prompt)
-        self.log_reasoning("ANALYSIS RESULTS", 
+        self.log_reasoning("CONFLICT TYPE", f"Using conflict type: {self.conflict_type.value}")
+        self.log_reasoning("GENRE TYPE", f"Using genre type: {self.genre_type.value}")
+        self.log_reasoning("TONE TYPE", f"Using tone type: {self.tone_type.value}")
+    
+        prompt_analysis = self.prompt_analyzer(
+            prompt=prompt,
+            conflict_type_input=self.conflict_type.value,
+            genre_type_input=self.genre_type.value,
+            tone_type_input=self.tone_type.value
+            )
+        self.log_reasoning("PROMPT ANALYSIS RESULTS",
             f"Theme: {prompt_analysis.theme}\n"
             f"Genre: {prompt_analysis.genre}\n"
             f"Tone: {prompt_analysis.tone}\n"
@@ -228,12 +160,26 @@ class StoryAssembler(dspy.Module):
 
 
 # Now we create the final function to create this story
-def generate_story(prompt: str) -> tuple:
+def generate_story(prompt: str, conflict_type: ConflictType = None, genre_type: GenreType = None, tone_type: ToneType = None) -> tuple:
     """Main function to generate a complete story and save files"""
     # Create stories directory if it doesn't exist
     os.makedirs("stories", exist_ok=True)
-    
-    generator = StoryGenerator()
+
+    # Get user preferences
+    if conflict_type is None:
+        conflict_type = get_conflict_preferences()
+    if genre_type is None:
+        genre_type = get_genre_preferences()
+    if tone_type is None:
+        tone_type = get_tone_preferences()
+
+    # Create the story
+    generator = StoryGenerator(
+                        conflict_type=conflict_type, 
+                        genre_type=genre_type, 
+                        tone_type=tone_type
+    )
+    # Ensamble the story
     assembler = StoryAssembler()
 
     # Generate story elements and get reasoning log
@@ -267,6 +213,18 @@ def generate_story(prompt: str) -> tuple:
 if __name__ == "__main__":
     # input_text = "Never despise what seems insignificant, for there is no being so weak that it cannot reach you."
     input_text = "Fimbulwinter. Kratos sits in a cave covered with a black fur hide and looks sadly at the fire. He sighs and pulls out an empty sack containing Faye's ashes. He gently strokes the pouch remembering her. Sighing and putting away the pouch, Kratos takes out a knife and a stick from which he makes an arrow. Out of the white mist, Atreus enters the cave with a deer on his shoulders."
-
+    
     title, story, reasoning = generate_story(input_text)
     print(f"\nGenerated Title: {title}")
+
+
+
+
+
+
+
+
+
+
+
+
