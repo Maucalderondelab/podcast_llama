@@ -30,7 +30,13 @@ dspy.configure(lm=llm)
 
 # Now we have to create the story generator with all the classes we've created
 class StoryGenerator(dspy.Module):
-    def __init__(self, conflict_type: ConflictType = None, genre_type: GenreType = None, tone_type: ToneType = None):
+    def __init__(
+        self,
+        conflict_type: ConflictType = None,
+        genre_type: GenreType = None,
+        tone_type: ToneType = None
+        ):
+
         super().__init__()
         self.conflict_type = conflict_type
         self.genre_type = genre_type
@@ -135,10 +141,6 @@ class StoryGenerator(dspy.Module):
 
 # Excelente! Now we have to do a stroy asemble with all of these pieces
 
-class StoryAssemblySignature(dspy.Signature):
-    """Signature for final story assembly"""
-    elements = dspy.InputField(desc="Validated story elements")
-    story = dspy.OutputField(desc="Complete assembled story")
 
 class StoryAssembler(dspy.Module):
     def __init__(self):
