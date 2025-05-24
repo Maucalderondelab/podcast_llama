@@ -26,27 +26,49 @@ class Speaker:
     def __init__(
         self,
         voice_artist_name: str,
-        modelName: str = "Zyphra/Zonos-v0.1-transformer",
-        device: torch.device = DEFAULT_DEVICE,
         **kwargs,
     ):
-        audioPath = Path("tests") / VOICE_ARTISTS[voice_artist_name]
-        self.device = DEFAULT_DEVICE or globals().get("device", torch.device("cpu"))
+        self.audio_path: Path = Path("tests") / VOICE_ARTISTS[voice_artist_name]
 
         # Load the Zonos model
-        self.model = Zonos.from_pretrained(modelName, device=device)
+        self.model: "Zonos" = DEFAULT_ZONOS_MODEL
 
-        # embedd
-        embedding_output = self._create_speaker_embedding(audioPath)
-        self.wav: torch.Tensor = embedding_output[0]
-        self.sr: int = embedding_output[1]
-        self.speaker: zonos.model.Zonos = embedding_output[2]
+        # embed
+        self.speaker_embedding: torch.Tensor = self.create_speaker_embedding()
 
-    def _create_speaker_embedding(self, audioPath: Path):
-        if not audioPath.exists():
-            raise FileNotFoundError(f"Voice artist audio doesn't exist or is not in this location: {audioPath}")
+    def create_speaker_embedding(self) -> torch.Tensor:
+        if not self.audio_path.exists():
+            raise FileNotFoundError(f"Voice artist audio doesn't exist or is not in this location: {self.audio_path}")
 
         # Load artist's voice
-        wav, sampling_rate = torchaudio.load(str(audioPath))
-        return wav, sampling_rate, self.model.make_speaker_embedding(wav, sampling_rate)
+        wav, sampling_rate = torchaudio.load(str(self.audio_path))
+        embedded = self.model.make_speaker_embedding(wav, sampling_rate) 
+        torch.cuda.empty_cache()
+        return embedded
+
+    def talk(
+        self,
+        text: str,
+        output_path: Path | str | None = None,
+        **kwargs,
+    ) -> tuple[torch.Tensor, int]:
+        """
+        Generate speech based on the text provided.
+        """
+        cond_dict  = make_cond_dict(
+            text = text,
+            speaker = self.speaker_embedding
+        )
+
+        conditioning = self.model.prepare_conditioning(cond_dict)
+        codes = self.model.generate(conditioning)
+        wavs = self.model.autoencoder.decode(codes).cpu()
+        audio, sampling_rate = wavs[0], self.model.autoencoder.sampling_rate
+
+        if output_path is not None:
+            output_path = Path(output_path)
+            torchaudio.save(str(output_path), audio, sampling_rate)
+             
+        return audio, sampling_rate
+
 
