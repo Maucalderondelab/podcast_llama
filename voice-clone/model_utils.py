@@ -46,7 +46,7 @@ class Speaker:
         torch.cuda.empty_cache()
         return embedded
 
-    def talk(
+    def speak(
         self,
         text: str,
         output_path: Path | str | None = None,
