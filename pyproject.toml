@@ -29,6 +29,9 @@ dependencies = [
     "numba==0.61.0",
     "resampy",
     "silentcipher @ git+https://github.com/SesameAILabs/silentcipher@master", # csm
+
+    # string processing
+    "nltk",
 ]
 
 # Note: Not actually optional. All the modeling code lives in mamba-ssm.
