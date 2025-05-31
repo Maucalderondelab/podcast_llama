@@ -1,5 +1,12 @@
+.*
+!.gitignore
+
 .env
+
 /llama-recepies
 .vscode/settings.json
 .ipynb_checkpoints
 llama-recipes
+
+# ignore voice clones assets
+voice-clone/tests
