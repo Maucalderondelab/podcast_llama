@@ -1,4 +1,15 @@
-.env
-/llama-recepies
-.ipynb_checkpoints
+.*
+!.gitignore
 
+.env
+
+# Python  byproducts
+__pycache__/
+test.ipynb
+/llama-recepies
+.vscode/settings.json
+.ipynb_checkpoints
+llama-recipes
+
+# ignore voice clones assets
+voice-clone/tests
