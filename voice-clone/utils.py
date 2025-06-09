@@ -198,4 +198,5 @@ def analyze_chunks(chunks: list[str]) -> None:
     print(f"\nChunk lengths: {lengths}")
     
     for i, chunk in enumerate(chunks):
-        print(f"\nChunk {i+1} ({len(chunk)} chars): {chunk[:100]}{'...' if len(chunk) > 100 else ''}")
+        # print(f"\nChunk {i+1} ({len(chunk)} chars): {chunk[:100]}{'...' if len(chunk) > 100 else ''}")
+        print(f"\nChunk {i+1} ({len(chunk)} chars): {chunk}")
