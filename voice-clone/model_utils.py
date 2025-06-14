@@ -8,6 +8,7 @@ from pathlib import Path
 
 # Default models and speaker voice
 DEFAULT_ZONOS_MODEL = Zonos.from_pretrained("Zyphra/Zonos-v0.1-transformer", device=DEFAULT_DEVICE)
+HYBRID_ZONOS_MODEL = Zonos.from_pretrained("Zyphra/Zonos-v0.1-hybrid", device=DEFAULT_DEVICE)
 DEFAULT_MODEL_FILE_PATH = Path("tests") / "kratos-take-00-normCompress.mp3"
 
 # voice artists
@@ -21,6 +22,7 @@ VOICE_ARTISTS = {
     "western": "western-woman-narration.mp3",
 }
 
+# TODO
 # WIP Speakers available
 class Speaker:
     def __init__(
@@ -71,4 +73,11 @@ class Speaker:
              
         return audio, sampling_rate
 
-
+# >>> VoiceGen >>>
+class VoiceGen:
+    def __init__(
+        voices: list[str],
+        script: str,
+        truncated_script: list[str] | None = None,
+    ):
+# <<< VoiceGen <<<

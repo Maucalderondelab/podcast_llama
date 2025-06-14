@@ -1,6 +1,3 @@
-import numpy as np
-
-import torch
 import torchaudio
 from zonos.model import Zonos
 from zonos.conditioning import make_cond_dict

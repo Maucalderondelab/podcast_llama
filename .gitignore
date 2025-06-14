@@ -1,15 +1,10 @@
 .*
 !.gitignore
 
-.env
-
 # Python  byproducts
 __pycache__/
-test.ipynb
-/llama-recepies
-.vscode/settings.json
+test*.ipynb
 .ipynb_checkpoints
-llama-recipes
 
 # ignore voice clones assets
-voice-clone/tests
+tests/
