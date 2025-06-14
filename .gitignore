@@ -9,3 +9,13 @@ test*.ipynb
 # ignore voice clones assets
 tests/
 src/tests/
+
+*.parquet
+*.map
+*.zip
+*.gz
+*.tar
+*.tgz
+
+# ignore specific files
+pdf_docs/ScalingLawsForNeuralLanguageModelspdf.pdf
