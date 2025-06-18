@@ -1,3 +1,6 @@
+import torch
+import torchaudio
+
 from audiogen.models.models import Audio, SpeakerText
 
 import nltk
@@ -21,6 +24,33 @@ except LookupError:
     print("Downloading NLTK punkt tokenizer...")
     nltk.download('punkt_tab')
 
+# >>> Concat Torch segments >>>
+def torch_concat(
+    audio_segments: list[Audio],
+    output_path: Path | str | None = None,
+) -> Audio:
+
+    group_audio_segments_list = []
+    for asg in audio_segments:
+        group_audio_segments_list.append(asg)
+    
+    group_audio_segments_tuple = tuple(group_audio_segments_list)
+    group_audio_segments = torch.cat(group_audio_segments_tuple, dim=1)
+
+    sample_rate = audio_segments[0].srate
+
+    if output_path is not None:
+        output_path = str(output_path)
+        torchaudio.save(output_path, group_audio_segments, sample_rate)
+        _print_output = f"DONE! Saved torch-concatenated audio file at: {output_path}"
+        print(len(_print_output) * "-")
+        print(_print_output)
+
+    return Audio(group_audio_segments, sample_rate) 
+# <<< Concat Torch segments <<<
+
+
+# >>> Split text balanced >>>
 def split_text_balanced(text: str, max_length: int = 300, target_length: int | None = None) -> list[str]:
     """
     Split text into sentences with similar lengths, respecting sentence boundaries.
@@ -104,8 +134,10 @@ def split_text_balanced(text: str, max_length: int = 300, target_length: int | N
         chunks.append(current_chunk)
     
     return chunks
+# <<< Split text balanced <<<
 
 
+# >>> Split in sentences >>>
 def split_long_sentence(sentence: str, max_length: int, target_length: int) -> list[str]:
     """
     Split a sentence that's too long at natural break points.
@@ -179,8 +211,10 @@ def split_long_sentence(sentence: str, max_length: int, target_length: int) -> l
         chunks.append(remaining)
     
     return chunks
+# <<< Split in sentences <<<
 
 
+# >>> Analyze text chunks >>>
 def analyze_chunks(chunks: list[str]) -> None:
     """
     Print analysis of chunk lengths for debugging.
@@ -202,3 +236,4 @@ def analyze_chunks(chunks: list[str]) -> None:
     for i, chunk in enumerate(chunks):
         # print(f"\nChunk {i+1} ({len(chunk)} chars): {chunk[:100]}{'...' if len(chunk) > 100 else ''}")
         print(f"\nChunk {i+1} ({len(chunk)} chars): {chunk}")
+# <<< Analyze text chunks <<<

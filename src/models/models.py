@@ -4,8 +4,6 @@ import torchaudio
 from zonos.model import Zonos
 from zonos.conditioning import make_cond_dict
 
-from typing import NamedTuple
-
 from pathlib import Path
 
 # TODO
@@ -20,7 +18,6 @@ def get_device() -> torch.device:
 
 DEFAULT_DEVICE = get_device()
 
-# FIXME
 # Default models and speaker voice
 DEFAULT_ZONOS_MODEL = Zonos.from_pretrained("Zyphra/Zonos-v0.1-transformer", device=DEFAULT_DEVICE)
 # HYBRID_ZONOS_MODEL = Zonos.from_pretrained("Zyphra/Zonos-v0.1-hybrid", device=DEFAULT_DEVICE)
@@ -38,7 +35,8 @@ VOICE_ARTISTS = {
 }
 
 # >>> Audio >>>
-class Audio(NamedTuple):
+@dataclass
+class Audio:
     tensor: torch.Tensor
     srate: int
 # <<< Audio <<<
@@ -103,32 +101,8 @@ class Speaker:
 
 
 # >>> Dataclass SpeakerText >>>
-class SpeakerText(NamedTuple):
+class SpeakerText:
     speaker: Speaker
     text: str
 # <<< Dataclass SpeakerText <<<
 
-
-# >>> Concat Torch segments >>>
-def torch_concat(
-    audio_segments: list[Audio],
-    output_path: Path | str | None = None,
-) -> Audio:
-
-    group_audio_segments_list = []
-    for asg in audio_segments:
-        group_audio_segments_list.append(asg)
-    
-    group_audio_segments_tuple = tuple(group_audio_segments_list)
-    group_audio_segments = torch.cat(group_audio_segments_tuple, dim=1)
-
-    sample_rate = audio_segments[0].srate
-
-    if output_path is not None:
-        output_path = str(output_path)
-        torchaudio.save(output_path, group_audio_segments, sample_rate)
-        print("--------------------------------------------------")
-        print(f"DONE! Saved torch-concatenated audio file at: {output_path}")
-
-    return Audio(group_audio_segments, sample_rate) 
-# <<< Concat Torch segments <<<
