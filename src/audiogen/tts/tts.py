@@ -1,6 +1,7 @@
+from audiogen.models import Audio, Speaker, SpeakerText
+from pathlib import Path
 
-
-class VoiceGen:
+class TTS:
     def __init__(
         self,
         speaker: Speaker | None = None,
