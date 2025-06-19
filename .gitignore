@@ -1,6 +1,9 @@
 .*
 !.gitignore
 
+# Project byproducts
+podcast_llama.egg-info/
+
 # Python  byproducts
 __pycache__/
 test*.ipynb
