@@ -10,6 +10,9 @@ test*.ipynb
 tests/
 src/tests/
 
+data/stories/
+data/voices/
+
 *.parquet
 *.map
 *.zip
