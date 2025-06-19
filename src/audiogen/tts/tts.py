@@ -1,4 +1,5 @@
 from audiogen.models import Audio, Speaker, SpeakerText
+from audiogen.utils import torch_concat
 from pathlib import Path
 
 class TTS:
@@ -9,13 +10,29 @@ class TTS:
         script: list[SpeakerText] | None = None,
         output_path: Path | str | None = None,
         save_lines: bool | None = None,
-    ) -> None:  # __init__ should return None, not list[Audio]
-        # If no script is provided then create one monologue
+    ) -> None:
+        """
+        Initialize TTS system.
+        
+        Args:
+            speaker: Single speaker for monologue (used with text)
+            text: Text for monologue (used with speaker)
+            script: List of SpeakerText for multi-speaker dialogue
+            output_path: Path to save final concatenated audio
+            save_lines: Whether to save individual lines as separate files
+        """
+        # Validate input args combinations
         if script is None:
-            assert (speaker is not None) and (text is not None), "When `script` is not provided then arguments `speaker` and `text` are mandatory."
-            # Create SpeakerText properly, not a tuple
-            self.audio_script: list[SpeakerText] = [SpeakerText(speaker, text)]
+            if (speaker is None) or (text is None):
+                raise ValueError(
+                    "When `script` is not provided then both `speaker` and `text` arguments are required."
+                )
+            self.audio_script: list[SpeakerText] = [SpeakerText(speaker=speaker, text=text)]
         else:
+            if (speaker is not None) or (text is not None):
+                raise ValueError(
+                    "When `script` is provided, do not use `speaker` nor `text` arguments."
+                )
             self.audio_script: list[SpeakerText] = script
         
         # Store other parameters

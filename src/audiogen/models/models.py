@@ -49,6 +49,13 @@ class Audio:
     srate: int
 # <<< Audio <<<
 
+# >>> Dataclass SpeakerText >>>
+@dataclass
+class SpeakerText:
+    speaker: "Speaker"
+    text: str
+# <<< Dataclass SpeakerText <<<
+
 # >>> Speaker class >>>
 class Speaker:
     def __init__(
@@ -66,7 +73,9 @@ class Speaker:
 
     def create_speaker_embedding(self) -> torch.Tensor:
         if not self.audio_path.exists():
-            raise FileNotFoundError(f"Voice artist audio doesn't exist or is not in this location: {self.audio_path}")
+            raise FileNotFoundError(
+                f"Voice artist audio doesn't exist or is not in this location: {self.audio_path}"
+            )
 
         # Load artist's voice
         voice: Audio = Audio(*torchaudio.load(str(self.audio_path)))
@@ -83,10 +92,13 @@ class Speaker:
         """
         Generate speech based on the text provided.
         
-        args
-        ----
-        text: str
-        output_path: Path | str
+        Args:
+            text: Text to convert to speech
+            output_path: Optional path to save the audio file
+            **kwargs: Additional arguments
+            
+        Returns:
+            Audio object containing the generated speech
         """
         cond_dict  = make_cond_dict(
             text = text,
@@ -99,18 +111,13 @@ class Speaker:
         voice: Audio = Audio(wavs[0], self.model.autoencoder.sampling_rate)
 
         if output_path is not None:
-            output_path = Path(output_path)
-            torchaudio.save(str(output_path), voice.tensor, voice.srate)
+            torchaudio.save(Path(output_path), voice.tensor, voice.srate)
 
         torch.cuda.empty_cache()
              
         return voice
 # <<< Speaker class <<<
 
+str(output_path)
 
-# >>> Dataclass SpeakerText >>>
-class SpeakerText:
-    speaker: Speaker
-    text: str
-# <<< Dataclass SpeakerText <<<
 

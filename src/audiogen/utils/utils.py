@@ -1,3 +1,5 @@
+# src/audiogen/utils/utils.py
+
 import torch
 import torchaudio
 
@@ -49,8 +51,7 @@ def torch_concat(
     sample_rate = audio_segments[0].srate
 
     if output_path is not None:
-        output_path = str(output_path)
-        torchaudio.save(output_path, group_audio_segments, sample_rate)
+        torchaudio.save(Path(output_path), group_audio_segments, sample_rate)
         _print_output = f"DONE! Saved torch-concatenated audio file at: {output_path}"
         print(len(_print_output) * "-")
         print(_print_output)
