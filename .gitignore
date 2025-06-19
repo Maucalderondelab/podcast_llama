@@ -1,12 +1,21 @@
 .*
 !.gitignore
 
-.env
-
-/llama-recepies
-.vscode/settings.json
+# Python  byproducts
+__pycache__/
+test*.ipynb
 .ipynb_checkpoints
-llama-recipes
 
 # ignore voice clones assets
-voice-clone/tests
+tests/
+src/tests/
+
+*.parquet
+*.map
+*.zip
+*.gz
+*.tar
+*.tgz
+
+# ignore specific files
+pdf_docs/ScalingLawsForNeuralLanguageModelspdf.pdf
