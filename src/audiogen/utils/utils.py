@@ -1,11 +1,7 @@
-# src/audiogen/utils/utils.py
-
 import torch
-import torchaudio
-
-from audiogen.models import Audio
 
 from pathlib import Path
+import warnings
 
 import re
 
@@ -20,7 +16,6 @@ except LookupError:
 
 __all__ = [
     "load_txt",
-    "torch_concat",
     "split_text_balanced",
     "split_long_sentence",
     "analyze_chunks",
@@ -35,41 +30,6 @@ def load_txt(fpath: Path | str) -> str:
         raise FileNotFoundError(f"File '{fpath}' doesn't exist or is not in this location.")
     return fpath.read_text()
 # <<< load_txt - from Path <<<
-
-
-# >>> relative_save - save file to dir w/o full Path >>>
-def _realtive_save(audio_segment, sample_rate, **kwargs):
-    kval = kwargs.items()
-    if "full_path" in kval:
-        output_path = kwargs["full_path"]
-
-    torch.save(Path(output_path), audio_segment, sample_rate)
-# <<< relative_save - save file to dir w/o full Path <<<
-
-
-# >>> Concat Torch segments >>>
-def torch_concat(
-    audio_segments: list[Audio],
-    output_path: Path | str | None = None,
-) -> Audio:
-
-    group_audio_segments_list = []
-    for asg in audio_segments:
-        group_audio_segments_list.append(asg)
-    
-    group_audio_segments_tuple = tuple(group_audio_segments_list)
-    group_audio_segments = torch.cat(group_audio_segments_tuple, dim=1)
-
-    sample_rate = audio_segments[0].srate
-
-    if output_path is not None:
-        torchaudio.save(Path(output_path), group_audio_segments, sample_rate)
-        _print_output = f"DONE! Saved torch-concatenated audio file at: {output_path}"
-        print(len(_print_output) * "-")
-        print(_print_output)
-
-    return Audio(group_audio_segments, sample_rate) 
-# <<< Concat Torch segments <<<
 
 
 # >>> Split text balanced >>>
