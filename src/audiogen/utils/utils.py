@@ -5,10 +5,17 @@ import torchaudio
 
 from audiogen.models import Audio
 
-import nltk
 from pathlib import Path
 
 import re
+
+import nltk
+# Download required NLTK data if not already present
+try:
+    nltk.data.find('tokenizers/punkt_tab')
+except LookupError:
+    print("Downloading NLTK punkt tokenizer...")
+    nltk.download('punkt_tab')
 
 
 __all__ = [
@@ -19,7 +26,7 @@ __all__ = [
     "analyze_chunks",
 ]
 
-# give path to directory and load *.txt story file
+# >>> load_txt - from Path >>>
 def load_txt(fpath: Path | str) -> str:
     fpath = Path(fpath) # works for both str and Path
 
@@ -27,13 +34,18 @@ def load_txt(fpath: Path | str) -> str:
     if not fpath.is_file():
         raise FileNotFoundError(f"File '{fpath}' doesn't exist or is not in this location.")
     return fpath.read_text()
+# <<< load_txt - from Path <<<
 
-# Download required NLTK data if not already present
-try:
-    nltk.data.find('tokenizers/punkt_tab')
-except LookupError:
-    print("Downloading NLTK punkt tokenizer...")
-    nltk.download('punkt_tab')
+
+# >>> relative_save - save file to dir w/o full Path >>>
+def _realtive_save(audio_segment, sample_rate, **kwargs):
+    kval = kwargs.items()
+    if "full_path" in kval:
+        output_path = kwargs["full_path"]
+
+    torch.save(Path(output_path), audio_segment, sample_rate)
+# <<< relative_save - save file to dir w/o full Path <<<
+
 
 # >>> Concat Torch segments >>>
 def torch_concat(

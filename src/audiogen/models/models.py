@@ -66,7 +66,7 @@ class Speaker:
         self.audio_path: Path = Path("tests") / VOICE_ARTISTS[voice_artist_name]
 
         # Load the Zonos model
-        self.model: "Zonos" = DEFAULT_ZONOS_MODEL
+        self.model: Zonos = DEFAULT_ZONOS_MODEL
 
         # embed
         self.speaker_embedding: torch.Tensor = self.create_speaker_embedding()
@@ -78,7 +78,7 @@ class Speaker:
             )
 
         # Load artist's voice
-        voice: Audio = Audio(*torchaudio.load(str(self.audio_path)))
+        voice: Audio = Audio(*torchaudio.load(self.audio_path))
         embedded = self.model.make_speaker_embedding(voice.tensor, voice.srate) 
         torch.cuda.empty_cache()
         return embedded
@@ -117,7 +117,3 @@ class Speaker:
              
         return voice
 # <<< Speaker class <<<
-
-str(output_path)
-
-
