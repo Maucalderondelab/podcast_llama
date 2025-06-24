@@ -1,9 +1,16 @@
-from .models import Audio, Speaker, SpeakerText, torch_concat, save_to_path
+from .models import (
+    TTSModel,
+    ModelManager,
+    ZonosModel, 
+    ElevenLabsModel,
+)
+
+from .voices import VOICE_ARTISTS
 
 __all__ = [
-    "Audio",
-    "Speaker",
-    "SpeakerText",
-    "torch_concat",
-    "save_to_path",
+    "VOICE_ARTISTS",
+    "TTSModel",
+    "ModelManager",
+    "ZonosModel", 
+    "ElevenLabsModel",
 ]

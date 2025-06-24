@@ -1,197 +1,187 @@
+import asyncio
+
 import torch
-import torchaudio
 
-from zonos.model import Zonos
-from zonos.conditioning import make_cond_dict
-
-from dataclasses import dataclass
-from pathlib import Path
+from typing import Any
+from abc import ABC, abstractmethod
 
 __all__ = [
-    "Audio",
-    "Speaker",
-    "SpeakerText",
-    "torch_concat",
-    "save_to_path",
+    "TTSModel",
+    "ModelManager",
+    "ZonosModel", 
+    "ElevenLabsModel",
 ]
 
-# TODO
-# Get device
-def get_device() -> torch.device:
-    if torch.cuda.is_available():
-        return torch.device(torch.cuda.current_device())
-    # MPS breaks for whatever reason. Uncomment when it's working.
-    # if torch.mps.is_available():
-    #     return torch.device("mps")
-    return torch.device("cpu")
-
-DEFAULT_DEVICE = get_device()
-
-# Default models and speaker voice
-DEFAULT_ZONOS_MODEL = Zonos.from_pretrained("Zyphra/Zonos-v0.1-transformer", device=DEFAULT_DEVICE)
-# HYBRID_ZONOS_MODEL = Zonos.from_pretrained("Zyphra/Zonos-v0.1-hybrid", device=DEFAULT_DEVICE)
-DEFAULT_MODEL_FILE_PATH = Path("tests") / "kratos-take-00-normCompress.mp3"
-
-# voice artists
-# data_path: Path = Path("..", "..", "..", "data")
-data_path: Path = Path("../data/voices")
-VOICE_ARTISTS = {
-    "default": data_path / "kratos-take-00-normCompress.mp3",
-    "british-01": data_path / "british-woman-monologue-01.mp3",
-    "british-02": data_path / "british-woman-monologue-02.mp3",
-    "meditation": data_path / "meditation-voiceover.mp3",
-    "novel": data_path / "novel-story-narration.mp3",
-    "sports": data_path / "SJohnsonVoiceOvers.mp3",
-    "western": data_path / "western-woman-narration.mp3",
-}
-
-# >>> Audio >>>
-@dataclass
-class Audio:
-    wavtensor: torch.Tensor
-    srate: int
-# <<< Audio <<<
-
-# >>> Dataclass SpeakerText >>>
-@dataclass
-class SpeakerText:
-    speaker: "Speaker"
-    text: str
-# <<< Dataclass SpeakerText <<<
-
-# >>> Speaker class >>>
-class Speaker:
-    def __init__(
-        self,
-        voice_artist_name: str,
-        **kwargs,
-    ):
-        self.audio_path: Path = VOICE_ARTISTS[voice_artist_name]
-
-        # Load the Zonos model
-        self.model: Zonos = DEFAULT_ZONOS_MODEL
-
-        # embed
-        self.speaker_embedding: torch.Tensor = self.create_speaker_embedding()
-
-    def create_speaker_embedding(self) -> torch.Tensor:
-        if not self.audio_path.exists():
-            raise FileNotFoundError(
-                f"Voice artist audio doesn't exist or is not in this location: {self.audio_path}"
-            )
-
-        # Load artist's voice
-        voice: Audio = Audio(*torchaudio.load(self.audio_path))
-        embedded = self.model.make_speaker_embedding(voice.wavtensor, voice.srate) 
-        torch.cuda.empty_cache()
-        return embedded
-
-    def speak(
-        self,
-        text: str,
-        output_path: Path | str | None = None,
-        dir_path: Path | str | None = None,
-        fname: str | None = None,
-        save_to_cache: bool = False,
-        parents: bool = False,
-        exist_ok: bool = True,
-    ) -> Audio:
-        """
-        Generate speech based on the text provided.
-        
-        Args:
-            text: Text to convert to speech
-            output_path: Optional path to save the audio file
-            **kwargs: Additional arguments
-            
-        Returns:
-            Audio object containing the generated speech
-        """
-        cond_dict  = make_cond_dict(
-            text = text,
-            speaker = self.speaker_embedding
-        )
-
-        conditioning = self.model.prepare_conditioning(cond_dict)
-        codes = self.model.generate(conditioning)
-        wavs = self.model.autoencoder.decode(codes).cpu()
-        voice: Audio = Audio(wavs[0], self.model.autoencoder.sampling_rate)
-
-        if output_path is not None or dir_path is not None or fname is not None:
-            save_to_path(
-                voice,
-                output_path, 
-                dir_path, 
-                fname, 
-                save_to_cache, 
-                parents, 
-                exist_ok,
-            )
-
-        torch.cuda.empty_cache()
-        return voice
-# <<< Speaker class <<<
-
-# >>> Concat Torch segments >>>
-def torch_concat(
-    audio_segments: list[Audio],
-    output_path: Path | str | None = None,
-) -> Audio:
-
-    group_audio_segments_list = []
-    for asg in audio_segments:
-        group_audio_segments_list.append(asg)
+class TTSModel(ABC):
+    """Abstract base class for TTS models"""
     
-    group_audio_segments_tuple = tuple(group_audio_segments_list)
-    group_audio_segments = torch.cat(group_audio_segments_tuple, dim=1)
+    @abstractmethod
+    async def load(self) -> None:
+        """Load the model asynchronously"""
+        pass
+    
+    @abstractmethod
+    def unload(self) -> None:
+        """Unload model and free memory"""
+        pass
+    
+    @property
+    @abstractmethod
+    def is_loaded(self) -> bool:
+        """Check if model is loaded"""
+        pass
 
-    sample_rate = audio_segments[0].srate
+class ZonosModel(TTSModel):
+    def __init__(self, model_name: str = "Zyphra/Zonos-v0.1-transformer"):
+        self.model_name = model_name
+        self.device = self._get_device()
+        self._model = None
+        self._loading_lock = asyncio.Lock()
+    
+    def _get_device(self) -> torch.device:
+        if torch.cuda.is_available():
+            return torch.device(torch.cuda.current_device())
+        return torch.device("cpu")
+    
+    async def load(self) -> None:
+        async with self._loading_lock:
+            if self._model is None:
+                # Import only when needed
+                from zonos.model import Zonos
+                
+                # Run in thread pool to avoid blocking
+                self._model = await asyncio.to_thread(
+                    Zonos.from_pretrained, 
+                    self.model_name, 
+                    device=self.device
+                )
+    
+    def unload(self) -> None:
+        if self._model is not None:
+            del self._model
+            self._model = None
+            torch.cuda.empty_cache()
+    
+    @property
+    def is_loaded(self) -> bool:
+        return self._model is not None
+    
+    @property
+    def model(self):
+        if not self.is_loaded:
+            raise RuntimeError("Model not loaded. Call await model.load() first.")
+        return self._model
 
-    if output_path is not None:
-        torchaudio.save(Path(output_path), group_audio_segments, sample_rate)
+class ElevenLabsModel(TTSModel):
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self._client = None
+        self._loading_lock = asyncio.Lock()
+    
+    async def load(self) -> None:
+        async with self._loading_lock:
+            if self._client is None:
+                # Import only when needed
+                from elevenlabs import ElevenLabs
+                self._client = ElevenLabs(api_key=self.api_key)
+    
+    def unload(self) -> None:
+        self._client = None
+    
+    @property
+    def is_loaded(self) -> bool:
+        return self._client is not None
+    
+    @property
+    def client(self):
+        if not self.is_loaded:
+            raise RuntimeError("Model not loaded. Call await model.load() first.")
+        return self._client
 
-    return Audio(group_audio_segments, sample_rate) 
-# <<< Concat Torch segments <<<
-
-
-# >>> save_to_path - save file to dir w/ or w/o full Path >>>
-def save_to_path(
-    voice: Audio,
-    output_path: Path | str | None = None,
-    dir_path: Path | str | None = None,
-    fname: str | None = None,
-    save_to_cache: bool = False,
-    parents: bool = True,
-    exist_ok: bool = False,
-):
-    assert Path(output_path).suffix not in [".mp3", ".wav"], "`output_path` must end with a valid audio file extension."
-    assert Path(fname).suffix not in [".mp3", ".wav"], "`fname` must end with a valid audio file extension."
-
-    data_path: Path = Path("..", "..", "..", "data")
-
-    # Validate inputs are correct
-    if output_path is not None:
-        if dir_path is not None or fname is not None:
-            warnings.warn("`output_path` provided, ignoring `dir_path` and `fname`.", UserWarning)
-            full_path_file: Path = data_path / output_path
-
-    if output_path is None:
-        if dir_path is None or fname is None:
-            raise ValueError("Provide either `full_path` or both `dir_path` and `fname`")
+class ModelManager:
+    """Singleton model manager for all TTS models"""
+    
+    _instance = None
+    _initialized = False
+    
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+        return cls._instance
+    
+    def __init__(self):
+        if not self._initialized:
+            self.models: dict[str, dict[str, TTSModel]] = {
+                "tts": {},
+                "video": {},
+                "image": {}
+            }
+            self._loading_tasks: dict[str, asyncio.Task] = {}
+            ModelManager._initialized = True
+    
+    def register_model(self, category: str, name: str, model: TTSModel) -> None:
+        """Register a model with the manager"""
+        if category not in self.models:
+            self.models[category] = {}
+        self.models[category][name] = model
+    
+    async def load_model(self, category: str, name: str) -> TTSModel:
+        """Load a model asynchronously with deduplication"""
+        key = f"{category}_{name}"
+        
+        if key in self._loading_tasks:
+            # Model is already being loaded, wait for it
+            await self._loading_tasks[key]
         else:
-            if save_to_cache:
-                full_path: Path = data_path / dir_path / "cache" 
-                full_path.mkdir(parents=parents, exist_ok=exist_ok)
-                full_path_file: Path = full_path / fname
-            else:
-                full_path: Path = data_path / dir_path
-                full_path.mkdir(parents=parents, exist_ok=exist_ok)
-                full_path_file: Path = full_path / fname
+            model = self.get_model(category, name)
+            if not model.is_loaded:
+                # Start loading task
+                self._loading_tasks[key] = asyncio.create_task(model.load())
+                await self._loading_tasks[key]
+                # Clean up completed task
+                del self._loading_tasks[key]
+        
+        return self.get_model(category, name)
+    
+    def get_model(self, category: str, name: str) -> TTSModel:
+        """Get a model (must be loaded first)"""
+        if category not in self.models or name not in self.models[category]:
+            raise ValueError(f"Model {category}/{name} not registered")
+        return self.models[category][name]
+    
+    def unload_model(self, category: str, name: str) -> None:
+        """Unload a specific model"""
+        model = self.get_model(category, name)
+        model.unload()
+    
+    def unload_category(self, category: str) -> None:
+        """Unload all models in a category"""
+        if category in self.models:
+            for model in self.models[category].values():
+                model.unload()
+    
+    def unload_all(self) -> None:
+        """Unload all models"""
+        for category in self.models:
+            self.unload_category(category)
+    
+    def get_memory_usage(self) -> dict[str, Any]:
+        """Get memory usage info"""
+        usage = {}
+        for category, models in self.models.items():
+            usage[category] = {}
+            for name, model in models.items():
+                usage[category][name] = {
+                    "loaded": model.is_loaded,
+                    "type": type(model).__name__
+                }
+        
+        if torch.cuda.is_available():
+            usage["gpu_memory"] = {
+                "allocated": torch.cuda.memory_allocated(),
+                "reserved": torch.cuda.memory_reserved()
+            }
+        
+        return usage
 
 
-    torch.save(full_path_file, voice.wavtensor, voice.srate)
-
-    _print_output = f"Audio file saved at: {full_path_file}"
-    print(_print_output)
-    print(len(_print_output) * "-")
-# <<< save_to_path - save file to dir w/ or w/o full Path <<<

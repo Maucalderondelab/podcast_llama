@@ -1,5 +1,3 @@
-import torch
-
 from pathlib import Path
 import warnings
 
