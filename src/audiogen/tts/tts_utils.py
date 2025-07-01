@@ -86,7 +86,8 @@ class Speaker:
         
         voice = Audio(wavs[0], self.model.model.autoencoder.sampling_rate)
         
-        # Handle saving if requested
+        # TODO: saving path/fname is not optimal
+        # implement saving w/ `save_to_path`
         if output_path is not None or dir_path is not None or fname is not None:
             save_to_path(
                 voice,
@@ -114,6 +115,7 @@ def torch_concat(
     
     return Audio(concatenated, sample_rate)
 
+# NOTE: revisit this function saving handling is not optimal
 def save_to_path(
     voice: Audio,
     output_path: Path | str | None = None,

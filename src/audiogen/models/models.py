@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 import torch
 
@@ -33,8 +34,8 @@ class TTSModel(ABC):
 
 class ZonosModel(TTSModel):
     def __init__(self, model_name: str = "Zyphra/Zonos-v0.1-transformer"):
-        self.model_name = model_name
-        self.device = self._get_device()
+        self.model_name: str = model_name
+        self.device: torch.device = self._get_device()
         self._model = None
         self._loading_lock = asyncio.Lock()
     
@@ -98,6 +99,8 @@ class ElevenLabsModel(TTSModel):
             raise RuntimeError("Model not loaded. Call await model.load() first.")
         return self._client
 
+# >>> ModelManager >>>
+# HACK: ModelManager is a must have intermediary to load TTS models
 class ModelManager:
     """Singleton model manager for all TTS models"""
     
@@ -116,24 +119,28 @@ class ModelManager:
                 "video": {},
                 "image": {}
             }
-            self._loading_tasks: dict[str, asyncio.Task] = {}
+            self._loading_tasks: dict[str, asyncio.Task] = {} # NOTE: check type of asyncio.Task
             ModelManager._initialized = True
     
-    def register_model(self, category: str, name: str, model: TTSModel) -> None:
+    def register_model(self, category: str, model_name: str, model: TTSModel) -> None:
         """Register a model with the manager"""
         if category not in self.models:
             self.models[category] = {}
-        self.models[category][name] = model
+        self.models[category][model_name] = model
     
-    async def load_model(self, category: str, name: str) -> TTSModel:
+    async def load_model(self, category: str, model_name: str) -> TTSModel:
         """Load a model asynchronously with deduplication"""
-        key = f"{category}_{name}"
+        key = f"{category}_{model_name}"
         
         if key in self._loading_tasks:
             # Model is already being loaded, wait for it
+            t0 = time.time()
             await self._loading_tasks[key]
+            tf = time.time()
+            print(f"Model is being loaded, (took {tf-t0}s)")
         else:
-            model = self.get_model(category, name)
+            # FIX: models not loading to `_loading_tasks`
+            model = self.get_model(category, model_name)
             if not model.is_loaded:
                 # Start loading task
                 self._loading_tasks[key] = asyncio.create_task(model.load())
@@ -141,17 +148,18 @@ class ModelManager:
                 # Clean up completed task
                 del self._loading_tasks[key]
         
-        return self.get_model(category, name)
+        return self.get_model(category, model_name)
     
-    def get_model(self, category: str, name: str) -> TTSModel:
+    def get_model(self, category: str, model_name: str) -> TTSModel:
         """Get a model (must be loaded first)"""
-        if category not in self.models or name not in self.models[category]:
-            raise ValueError(f"Model {category}/{name} not registered")
-        return self.models[category][name]
+        if category not in self.models or model_name not in self.models[category]:
+            raise ValueError(f"Model {category}/{model_name} not registered")
+        return self.models[category][model_name]
     
-    def unload_model(self, category: str, name: str) -> None:
+    # TODO: all unloads must be tested 
+    def unload_model(self, category: str, model_name: str) -> None:
         """Unload a specific model"""
-        model = self.get_model(category, name)
+        model = self.get_model(category, model_name)
         model.unload()
     
     def unload_category(self, category: str) -> None:
@@ -165,6 +173,7 @@ class ModelManager:
         for category in self.models:
             self.unload_category(category)
     
+    # TODO: not tested yet, will do eventually
     def get_memory_usage(self) -> dict[str, Any]:
         """Get memory usage info"""
         usage = {}
@@ -183,5 +192,5 @@ class ModelManager:
             }
         
         return usage
-
+# <<< ModelManager <<<
 

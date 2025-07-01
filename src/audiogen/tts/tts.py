@@ -8,6 +8,7 @@ from audiogen.tts.tts_utils import (
 from audiogen.models import ModelManager
 from pathlib import Path
 
+# FIX: TTS class logic is not working as expected
 class TTS:
     def __init__(
         self,
