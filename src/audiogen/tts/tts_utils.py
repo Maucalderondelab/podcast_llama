@@ -61,6 +61,7 @@ class Speaker:
         torch.cuda.empty_cache()
         return embedding
     
+    # NOTE: think if passing an `output_path` is a good system for audio saving
     def speak(
         self,
         text: str,
@@ -125,7 +126,7 @@ def save_to_path(
     parents: bool = True,
     exist_ok: bool = False,
 ):
-    # Fix the assertion logic - should check if suffix IS in the list
+    # FIX: the assertion logic - should check if suffix IS in the list
     if output_path is not None:
         assert Path(output_path).suffix in [".mp3", ".wav"], "`output_path` must end with a valid audio file extension."
     if fname is not None:
