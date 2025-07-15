@@ -3,14 +3,15 @@ import time
 
 import torch
 
+from mediagen.tts.tts_utils import Audio
+
 from typing import Any
 from abc import ABC, abstractmethod
+from pathlib import Path
 
 __all__ = [
     "TTSModel",
     "ModelManager",
-    "ZonosModel", 
-    "ElevenLabsModel",
 ]
 
 class TTSModel(ABC):
@@ -32,75 +33,18 @@ class TTSModel(ABC):
         """Check if model is loaded"""
         pass
 
-class ZonosModel(TTSModel):
-    def __init__(self, model_name: str = "Zyphra/Zonos-v0.1-transformer"):
-        self.model_name: str = model_name
-        self.device: torch.device = self._get_device()
-        self._model = None
-        self._loading_lock = asyncio.Lock()
-    
-    def _get_device(self) -> torch.device:
-        if torch.cuda.is_available():
-            return torch.device(torch.cuda.current_device())
-        return torch.device("cpu")
-    
-    async def load(self) -> None:
-        async with self._loading_lock:
-            if self._model is None:
-                # Import only when needed
-                from zonos.model import Zonos
-                
-                # Run in thread pool to avoid blocking
-                self._model = await asyncio.to_thread(
-                    Zonos.from_pretrained, 
-                    self.model_name, 
-                    device=self.device
-                )
-    
-    def unload(self) -> None:
-        if self._model is not None:
-            del self._model
-            self._model = None
-            torch.cuda.empty_cache()
-    
-    @property
-    def is_loaded(self) -> bool:
-        return self._model is not None
-    
-    @property
-    def model(self):
-        if not self.is_loaded:
-            raise RuntimeError("Model not loaded. Call await model.load() first.")
-        return self._model
+    @abstractmethod
+    def prep_speaker(self, audio_path: Path | str) -> torch.Tensor:
+        """Prep TTS model, normally available only for local-runs"""
+        pass
 
-class ElevenLabsModel(TTSModel):
-    def __init__(self, api_key: str):
-        self.api_key = api_key
-        self._client = None
-        self._loading_lock = asyncio.Lock()
-    
-    async def load(self) -> None:
-        async with self._loading_lock:
-            if self._client is None:
-                # Import only when needed
-                from elevenlabs import ElevenLabs
-                self._client = ElevenLabs(api_key=self.api_key)
-    
-    def unload(self) -> None:
-        self._client = None
-    
-    @property
-    def is_loaded(self) -> bool:
-        return self._client is not None
-    
-    @property
-    def client(self):
-        if not self.is_loaded:
-            raise RuntimeError("Model not loaded. Call await model.load() first.")
-        return self._client
+    @abstractmethod
+    def run_speaker(self, audio_path: Path | str) -> Audio:
+        """Run TTS model either with an API or locally"""
+        pass
 
 # >>> ModelManager >>>
-# HACK: ModelManager is a must have intermediary to load TTS models
+# HACK: ModelManager is a must-have intermediary to load TTS models
 class ModelManager:
     """Singleton model manager for all TTS models"""
     
@@ -115,7 +59,7 @@ class ModelManager:
     def __init__(self):
         if not self._initialized:
             self.models: dict[str, dict[str, TTSModel]] = {
-                "tts": {},
+                "audio": {},
                 "video": {},
                 "image": {}
             }
@@ -137,7 +81,7 @@ class ModelManager:
             t0 = time.time()
             await self._loading_tasks[key]
             tf = time.time()
-            print(f"Model is being loaded, (took {tf-t0}s)")
+            print(f"Model `{model_name}` loaded (took {tf-t0}s)")
         else:
             # FIX: models not loading to `_loading_tasks`
             model = self.get_model(category, model_name)
@@ -172,8 +116,14 @@ class ModelManager:
         """Unload all models"""
         for category in self.models:
             self.unload_category(category)
+
+    # >>> Prep & run model >>>
+    def run_model(self, category: str, model_name: str, audio_path: Path | str) -> torch.Tensor:
+        model = self.get_model(category, model_name)
+        return model.prep_speaker(audio_path=audio_path)
+    # <<< Prep & run model <<<
     
-    # TODO: not tested yet, will do eventually
+    # PERF: tested, works nice
     def get_memory_usage(self) -> dict[str, Any]:
         """Get memory usage info"""
         usage = {}

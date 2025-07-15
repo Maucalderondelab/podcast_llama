@@ -13,22 +13,10 @@ except LookupError:
 
 
 __all__ = [
-    "load_txt",
     "split_text_balanced",
     "split_long_sentence",
     "analyze_chunks",
 ]
-
-# >>> load_txt - from Path >>>
-def load_txt(fpath: Path | str) -> str:
-    fpath = Path(fpath) # works for both str and Path
-
-    # txtPath = Path(dirPath) / fname
-    if not fpath.is_file():
-        raise FileNotFoundError(f"File '{fpath}' doesn't exist or is not in this location.")
-    return fpath.read_text()
-# <<< load_txt - from Path <<<
-
 
 # >>> Split text balanced >>>
 def split_text_balanced(text: str, max_length: int = 300, target_length: int | None = None) -> list[str]:
