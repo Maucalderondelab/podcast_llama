@@ -18,8 +18,11 @@ class ZonosModelLocal(TTSModel):
     def __init__(self, model_name: str = "Zyphra/Zonos-v0.1-transformer"):
         self.model_name: str = model_name
         self.device: torch.device = self._get_device()
+        self.speaker_embedding: torch.Tensor | None = None
+        self.audio_path: Path | str | None = None
         self._client = None
         self._loading_lock = asyncio.Lock()
+
     
     def _get_device(self) -> torch.device:
         if torch.cuda.is_available():
@@ -33,7 +36,8 @@ class ZonosModelLocal(TTSModel):
                 # Import only when needed
                 from zonos.model import Zonos
                 
-                # TEST: if converting to str fixes the forward NotImplementedError
+                # HACK: converting to str fixes the forward NotImplementedError in asyncio.to_thread()
+                # In `zonos/model.py`, device argument type hint is marked as str but should be torch.device
                 device_str: str = str(self.device)
 
                 # Run in thread pool to avoid blocking
@@ -62,42 +66,38 @@ class ZonosModelLocal(TTSModel):
         return self._client
 
     @override
-    def prep_speaker(self, audio_path: Path | str) -> torch.Tensor:
+    def prep_model(self, audio_path: Path | str) -> torch.Tensor:
         # Lightweight properties - computed when needed
         self.audio_path: Path = Path(audio_path)
-        self._speaker_embedding: torch.Tensor | None = self._create_speaker_embedding()
-        return self._speaker_embedding
+        self.speaker_embedding: torch.Tensor | None = self._create_speaker_embedding()
+        return self.speaker_embedding
     
-    # >>> helper functions for prep_speaker >>>
+    # >>> helper functions for prep_model >>>
     def _create_speaker_embedding(self) -> torch.Tensor:
         if not self.audio_path.exists():
             raise FileNotFoundError(f"Voice artist audio not found: {self.audio_path}")
         
         # Load and embed voice sample
-        voice = Audio(*torchaudio.load(self.audio_path))
+        voice: Audio = Audio(*torchaudio.load(self.audio_path))
         embedding: torch.Tensor = self.client.make_speaker_embedding(voice.wavtensor, voice.srate)
         torch.cuda.empty_cache()
         return embedding
-    # <<< helper functions for prep_speaker <<<
 
     @property
-    def speaker_embedding(self) -> torch.Tensor:
+    def _get_speaker_embedding(self) -> torch.Tensor:
         """Get cached speaker embedding"""
-        if self._speaker_embedding is None:
-            raise RuntimeError("Speaker not prepared. Call prep_speaker() from ModelManager first")
-        return self._speaker_embedding
+        if self.speaker_embedding is None:
+            raise RuntimeError("Speaker not prepared. Call prep_model() from ModelManager first")
+        return self.speaker_embedding
+    # <<< helper functions for prep_model <<<
     
     @override
-    def run_speaker(self, text: str) -> Audio:
+    def run_model(self, text: str) -> Audio:
         # Import conditioning function
         from zonos.conditioning import make_cond_dict
 
-        # prepare model and embed voice
-        if self._speaker_embedding is None:
-            self.prep_speaker(self.audio_path)
-
         # Generate audio using shared model
-        cond_dict: dict = make_cond_dict(text=text, speaker=self.speaker_embedding)
+        cond_dict: dict = make_cond_dict(text=text, speaker=self._get_speaker_embedding)
         conditioning = self.client.prepare_conditioning(cond_dict)
         codes = self.client.generate(conditioning)
         wavs = self.client.autoencoder.decode(codes).cpu()

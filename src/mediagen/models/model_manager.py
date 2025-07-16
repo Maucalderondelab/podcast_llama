@@ -35,12 +35,12 @@ class TTSModel(ABC):
         pass
 
     @abstractmethod
-    def prep_speaker(self, audio_path: Path | str) -> torch.Tensor:
+    def prep_model(self, audio_path: Path | str) -> torch.Tensor:
         """Prep TTS model, normally available only for local-runs"""
         pass
 
     @abstractmethod
-    def run_speaker(self, text: str) -> Audio:
+    def run_model(self, text: str) -> Audio:
         """Run TTS model either with an API or locally"""
         pass
 
@@ -79,7 +79,6 @@ class ModelManager:
         
         if key in self._loading_tasks:
             # Model is already being loaded, wait for it
-            # FIX: NotImplementedError: Module [Zonos] is missing the required "forward" function
             t0 = time.time()
             await self._loading_tasks[key]
             tf = time.time()
@@ -119,13 +118,13 @@ class ModelManager:
             self.unload_category(category)
 
     # >>> Prep & run model >>>
-    def prep_model(self, category: str, model_name: str, audio_path: Path | str) -> torch.Tensor:
+    def prep_speaker(self, category: str, model_name: str, audio_path: Path | str) -> torch.Tensor:
         model = self.get_model(category, model_name)
-        return model.prep_speaker(audio_path=audio_path)
+        return model.prep_model(audio_path=audio_path)
 
-    def run_model(self, category: str, model_name: str, text: str) -> Audio:
+    def run_speaker(self, category: str, model_name: str, text: str) -> Audio:
         model = self.get_model(category, model_name)
-        return model.run_speaker(text=text)
+        return model.run_model(text=text)
     # <<< Prep & run model <<<
     
     # PERF: tested, works nice
