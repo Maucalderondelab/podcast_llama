@@ -1,3 +1,4 @@
+# src/mediagen/models/model_manager.py
 import asyncio
 import time
 
@@ -39,7 +40,7 @@ class TTSModel(ABC):
         pass
 
     @abstractmethod
-    def run_speaker(self, audio_path: Path | str) -> Audio:
+    def run_speaker(self, text: str) -> Audio:
         """Run TTS model either with an API or locally"""
         pass
 
@@ -78,12 +79,12 @@ class ModelManager:
         
         if key in self._loading_tasks:
             # Model is already being loaded, wait for it
+            # FIX: NotImplementedError: Module [Zonos] is missing the required "forward" function
             t0 = time.time()
             await self._loading_tasks[key]
             tf = time.time()
             print(f"Model `{model_name}` loaded (took {tf-t0}s)")
         else:
-            # FIX: models not loading to `_loading_tasks`
             model = self.get_model(category, model_name)
             if not model.is_loaded:
                 # Start loading task
@@ -118,9 +119,13 @@ class ModelManager:
             self.unload_category(category)
 
     # >>> Prep & run model >>>
-    def run_model(self, category: str, model_name: str, audio_path: Path | str) -> torch.Tensor:
+    def prep_model(self, category: str, model_name: str, audio_path: Path | str) -> torch.Tensor:
         model = self.get_model(category, model_name)
         return model.prep_speaker(audio_path=audio_path)
+
+    def run_model(self, category: str, model_name: str, text: str) -> Audio:
+        model = self.get_model(category, model_name)
+        return model.run_speaker(text=text)
     # <<< Prep & run model <<<
     
     # PERF: tested, works nice
