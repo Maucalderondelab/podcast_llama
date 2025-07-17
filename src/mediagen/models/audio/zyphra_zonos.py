@@ -2,7 +2,7 @@
 import asyncio
 
 import torch
-import torchaudio
+from torchaudio import load as _torchaudioLoad
 
 from mediagen.tts.tts_utils import Audio
 from ..model_manager import TTSModel
@@ -78,7 +78,7 @@ class ZonosModelLocal(TTSModel):
             raise FileNotFoundError(f"Voice artist audio not found: {self.audio_path}")
         
         # Load and embed voice sample
-        voice: Audio = Audio(*torchaudio.load(self.audio_path))
+        voice: Audio = Audio(*_torchaudioLoad(self.audio_path))
         embedding: torch.Tensor = self.client.make_speaker_embedding(voice.wavtensor, voice.srate)
         torch.cuda.empty_cache()
         return embedding

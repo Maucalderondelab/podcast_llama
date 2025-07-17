@@ -1,5 +1,5 @@
 import torch
-import torchaudio
+from torchaudio import load as _torchaudioLoad
 
 from .tts_utils import Audio, save_to_path, torch_concat
 
@@ -47,7 +47,7 @@ class Speaker:
             raise FileNotFoundError(f"Voice artist audio not found: {self.audio_path}")
         
         # Load and embed voice sample
-        voice = Audio(*torchaudio.load(self.audio_path))
+        voice = Audio(*_torchaudioLoad(self.audio_path))
         embedding = self.model.model.make_speaker_embedding(voice.wavtensor, voice.srate)
         torch.cuda.empty_cache()
         return embedding

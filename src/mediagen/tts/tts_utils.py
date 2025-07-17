@@ -1,5 +1,5 @@
 import torch
-import torchaudio
+from torchaudio import save as _torchaudioSave
 
 from pathlib import Path
 from dataclasses import dataclass
@@ -37,7 +37,7 @@ def torch_concat(
     sample_rate = audio_segments[0].srate
     
     if output_path:
-        torchaudio.save(Path(output_path), concatenated, sample_rate)
+        _torchaudioSave(Path(output_path), concatenated, sample_rate)
     
     return Audio(concatenated, sample_rate)
 # <<< torch_concat <<<
@@ -79,8 +79,8 @@ def save_to_path(
                 full_path.mkdir(parents=parents, exist_ok=exist_ok)
                 full_path_file: Path = full_path / fname
 
-    # Fix the torch.save call - should be torchaudio.save
-    torchaudio.save(full_path_file, voice.wavtensor, voice.srate)
+    # Fix the torch.save call - should be _torchaudioSave
+    _torchaudioSave(full_path_file, voice.wavtensor, voice.srate)
 
     _print_output = f"Audio file saved at: {full_path_file}"
     print(_print_output)
