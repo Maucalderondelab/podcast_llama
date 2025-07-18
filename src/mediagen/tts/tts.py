@@ -20,37 +20,25 @@ class SpeakerText:
 
 class Speaker:
     """Speaker class instantiates a voice based on a sample."""
-    
-    def __init__(self, model_name: str, voice_artist_name: str):
-        self.model_name = model_name
-        self.voice_artist_name = voice_artist_name
+    def __init__(self, mm: ModelManager, model_name: str, voice_artist_name: str):
+        self.mm: ModelManager = mm
+        self.category: str = "audio"
+        self.model_name: str = model_name
+        self.speaker_embedding: torch.Tensor | None = None
         self.audio_path: Path = VOICE_ARTISTS[voice_artist_name]
+        self.voice_artist_name: str = voice_artist_name
         
         # Lightweight properties - computed when needed
-        self._speaker_embedding: torch.Tensor | None = None
-        self._model_manager = ModelManager()
+        self.model_manager: ModelManager = mm
     
-    @property
-    def model(self):
-        """Get the shared model instance"""
-        return self._model_manager.get_model("tts", self.model_name)
-    
-    @property
-    def speaker_embedding(self) -> torch.Tensor:
-        """Lazy load speaker embedding"""
-        if self._speaker_embedding is None:
-            self._speaker_embedding = self._create_speaker_embedding()
-        return self._speaker_embedding
-    
-    def _create_speaker_embedding(self) -> torch.Tensor:
-        if not self.audio_path.exists():
-            raise FileNotFoundError(f"Voice artist audio not found: {self.audio_path}")
-        
-        # Load and embed voice sample
-        voice = Audio(*_torchaudioLoad(self.audio_path))
-        embedding = self.model.model.make_speaker_embedding(voice.wavtensor, voice.srate)
-        torch.cuda.empty_cache()
-        return embedding
+    # @property
+    # def prepare_speaker(self) -> torch.Tensor | None:
+    #     self.speaker_embedding: torch.Tensor | None = self.mm.prep_speaker(self.category, self.model_name, self.audio_path)
+    #     """Get the shared model instance"""
+    #     # Verify that model is reqgistered and loaded
+    #     if not self.model_manager.is_registered(self.category, self.model_name):
+    #         print(f"Registering category: {self.category} and model_name: {self.model_name}")
+    #         self.model_manager.register_model(self.category, self.model_name, )
     
     # NOTE: think if passing an `output_path` is a good system for audio saving
     def speak(

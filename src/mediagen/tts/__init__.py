@@ -16,10 +16,10 @@ from .tts_utils import (
 
 __all__ = [
     "Audio",
-    "load_txt",
-    "save_to_path",
     "Speaker",
     "SpeakerText",
+    "load_txt",
+    "save_to_path",
     "torch_concat",
     # "TTSservice",
 ]

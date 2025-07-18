@@ -35,12 +35,12 @@ class TTSModel(ABC):
         pass
 
     @abstractmethod
-    def prep_model(self, audio_path: Path | str) -> torch.Tensor:
-        """Prep TTS model, normally available only for local-runs"""
+    def prep_model(self, voice_id: str) -> torch.Tensor:
+        """Prep TTS model. Embed a voice sample for either a local or API tts call"""
         pass
 
     @abstractmethod
-    def run_model(self, text: str) -> Audio:
+    def run_model(self, voice_id: str, text: str) -> Audio:
         """Run TTS model either with an API or locally"""
         pass
 
@@ -72,6 +72,11 @@ class ModelManager:
         if category not in self.models:
             self.models[category] = {}
         self.models[category][model_name] = model
+
+    def is_registered(self, category: str, model_name: str) -> bool:
+        if category not in self.models or model_name not in self.models[category]:
+            return False
+        return True
     
     async def load_model(self, category: str, model_name: str) -> TTSModel:
         """Load a model asynchronously with deduplication"""
@@ -82,7 +87,7 @@ class ModelManager:
             t0 = time.time()
             await self._loading_tasks[key]
             tf = time.time()
-            print(f"Model `{model_name}` loaded (took {tf-t0}s)")
+            print(f"Model `{model_name}` cached (took {tf-t0}s)")
         else:
             model = self.get_model(category, model_name)
             if not model.is_loaded:
@@ -117,15 +122,17 @@ class ModelManager:
         for category in self.models:
             self.unload_category(category)
 
-    # >>> Prep & run model >>>
-    def prep_speaker(self, category: str, model_name: str, audio_path: Path | str) -> torch.Tensor:
+    # >>> prep & run TTSModel >>>
+    def prep_speaker(self, model_name: str, voice_id: str) -> torch.Tensor:
+        category: str = "audio"
         model = self.get_model(category, model_name)
-        return model.prep_model(audio_path=audio_path)
+        return model.prep_model(voice_id=voice_id)
 
-    def run_speaker(self, category: str, model_name: str, text: str) -> Audio:
+    def run_speaker(self, model_name: str, voice_id: str, text: str) -> Audio:
+        category: str = "audio"
         model = self.get_model(category, model_name)
-        return model.run_model(text=text)
-    # <<< Prep & run model <<<
+        return model.run_model(voice_id=voice_id, text=text)
+    # <<< prep & run TTSModel <<<
     
     # PERF: tested, works nice
     def get_memory_usage(self) -> dict[str, Any]:
