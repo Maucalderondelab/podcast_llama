@@ -1,12 +1,31 @@
 .*
 !.gitignore
+!*.vim # allow vim sessions to be pushed
 
-.env
+# Project byproducts
+podcast_llama.egg-info/
 
-/llama-recepies
-.vscode/settings.json
+# Python  byproducts
+__pycache__/
+test*.ipynb
 .ipynb_checkpoints
-llama-recipes
+
+# wheel
+dist/
 
 # ignore voice clones assets
-voice-clone/tests
+tests/
+src/tests/
+
+data/stories/
+data/voices/
+
+*.parquet
+*.map
+*.zip
+*.gz
+*.tar
+*.tgz
+
+# ignore specific files
+pdf_docs/ScalingLawsForNeuralLanguageModelspdf.pdf
